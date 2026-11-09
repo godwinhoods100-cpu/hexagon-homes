@@ -30,7 +30,7 @@ The UI currently ships with a built-in sample dataset. `src/api.ts` provides the
 
 ```bash
 pnpm install
-cp .env.example .env
+# create a .env file in the project root (see "Environment variables" below)
 pnpm dev
 ```
 
@@ -40,7 +40,7 @@ pnpm dev
 python -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
-cp .env.example .env
+# uses the same root .env file (see "Environment variables" below)
 python backend/manage.py migrate
 python backend/manage.py createsuperuser
 python backend/manage.py runserver
@@ -49,6 +49,29 @@ python backend/manage.py runserver
 Django reads the root `.env` file. Keep `DJANGO_DEBUG=true` for local work, and leave `DATABASE_URL` commented out to use SQLite. Superusers created with `createsuperuser` automatically get the `admin` role. Log in with your **email** (not the username).
 
 For a zero-configuration local check, omit `DATABASE_URL` and Django uses SQLite. Set `DATABASE_URL` to a PostgreSQL URL for normal development and production.
+
+## Environment variables
+
+Create a file named `.env` in the project root (it is gitignored). Minimum for local development:
+
+```env
+VITE_API_URL=http://localhost:8000/api
+DJANGO_SECRET_KEY=replace-with-a-long-random-value
+DJANGO_DEBUG=true
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=http://localhost:5173
+```
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Base URL of the Django API used by the frontend |
+| `DJANGO_SECRET_KEY` | Required when `DJANGO_DEBUG=false` |
+| `DJANGO_DEBUG` | `true` locally, `false` in production |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames |
+| `CORS_ALLOWED_ORIGINS` | Frontend origins allowed to call the API |
+| `CSRF_TRUSTED_ORIGINS` | Production frontend/API origins |
+| `DATABASE_URL` | Optional. PostgreSQL URL; leave unset to use SQLite |
+| `DB_SSLMODE` | PostgreSQL SSL mode (`require` in production) |
 
 ## Verification
 

@@ -2,13 +2,18 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 # Load variables from the project-root .env (one level above backend/)
 load_dotenv(BASE_DIR.parent / ".env")
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "development-only-change-me-use-a-long-random-key-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
+_DEV_SECRET_KEY = "development-only-change-me-use-a-long-random-key-in-production"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", _DEV_SECRET_KEY)
+if not DEBUG and SECRET_KEY == _DEV_SECRET_KEY:
+    # Never run in production with the public development key.
+    raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value when DJANGO_DEBUG is false.")
 ALLOWED_HOSTS = [x for x in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if x]
 
 INSTALLED_APPS = [
@@ -47,7 +52,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 LANGUAGE_CODE = "en-gb"
-TIME_ZONE = "Europe/London"
+TIME_ZONE = "Africa/Lagos"
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"
