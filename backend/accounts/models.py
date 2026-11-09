@@ -11,3 +11,9 @@ class User(AbstractUser):
     phone = models.CharField(max_length=30, blank=True)
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
+
+    def save(self, *args, **kwargs):
+        # Superusers created with `createsuperuser` should be administrators in the app too.
+        if self.is_superuser:
+            self.role = self.Role.ADMIN
+        super().save(*args, **kwargs)
