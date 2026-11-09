@@ -46,6 +46,8 @@ python backend/manage.py createsuperuser
 python backend/manage.py runserver
 ```
 
+Django reads the root `.env` file. Keep `DJANGO_DEBUG=true` for local work, and leave `DATABASE_URL` commented out to use SQLite. Superusers created with `createsuperuser` automatically get the `admin` role. Log in with your **email** (not the username).
+
 For a zero-configuration local check, omit `DATABASE_URL` and Django uses SQLite. Set `DATABASE_URL` to a PostgreSQL URL for normal development and production.
 
 ## Verification
