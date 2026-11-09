@@ -1,0 +1,17 @@
+import django.core.validators
+import django.db.models.deletion
+import properties.models
+from django.conf import settings
+from django.db import migrations, models
+
+class Migration(migrations.Migration):
+    initial = True
+    dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
+    operations = [
+        migrations.CreateModel(name="Property", fields=[
+            ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")), ("title", models.CharField(max_length=180)), ("description", models.TextField()), ("address", models.CharField(max_length=255)), ("city", models.CharField(db_index=True, max_length=100)), ("property_type", models.CharField(choices=[("house", "House"), ("apartment", "Apartment"), ("villa", "Villa"), ("cottage", "Cottage"), ("penthouse", "Penthouse")], db_index=True, max_length=20)), ("price", models.DecimalField(db_index=True, decimal_places=2, max_digits=12)), ("bedrooms", models.PositiveSmallIntegerField()), ("bathrooms", models.PositiveSmallIntegerField()), ("area_sqft", models.PositiveIntegerField()), ("amenities", models.JSONField(blank=True, default=list)), ("is_published", models.BooleanField(db_index=True, default=True)), ("created_at", models.DateTimeField(auto_now_add=True)), ("updated_at", models.DateTimeField(auto_now=True)), ("owner", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="properties", to=settings.AUTH_USER_MODEL)),
+        ], options={"ordering": ["-created_at"], "indexes": [models.Index(fields=["city", "property_type", "price"], name="properties__city_pr_147b84_idx")]}),
+        migrations.CreateModel(name="PropertyImage", fields=[("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")), ("image", models.ImageField(upload_to="properties/%Y/%m/", validators=[properties.models.validate_image])), ("alt_text", models.CharField(blank=True, max_length=180)), ("is_primary", models.BooleanField(default=False)), ("property", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="images", to="properties.property"))]),
+        migrations.CreateModel(name="Inquiry", fields=[("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")), ("name", models.CharField(max_length=120)), ("email", models.EmailField(max_length=254)), ("phone", models.CharField(blank=True, max_length=30)), ("message", models.TextField(max_length=2000)), ("is_read", models.BooleanField(default=False)), ("created_at", models.DateTimeField(auto_now_add=True)), ("property", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="inquiries", to="properties.property")), ("sender", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="inquiries", to=settings.AUTH_USER_MODEL))], options={"ordering": ["-created_at"]}),
+        migrations.CreateModel(name="Favourite", fields=[("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")), ("created_at", models.DateTimeField(auto_now_add=True)), ("property", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="favourited_by", to="properties.property")), ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="favourites", to=settings.AUTH_USER_MODEL))], options={"constraints": [models.UniqueConstraint(fields=("user", "property"), name="unique_user_property_favourite")]}),
+    ]
