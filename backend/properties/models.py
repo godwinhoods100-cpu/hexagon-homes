@@ -31,6 +31,7 @@ class Property(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         ordering = ["-created_at"]
+        verbose_name_plural = "properties"
         indexes = [models.Index(fields=["city", "property_type", "price"])]
 
 class PropertyImage(models.Model):
@@ -57,3 +58,4 @@ class Inquiry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         ordering = ["-created_at"]
+        verbose_name_plural = "inquiries"
