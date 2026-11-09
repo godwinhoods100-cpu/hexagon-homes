@@ -2,7 +2,11 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Load variables from the project-root .env (one level above backend/)
+load_dotenv(BASE_DIR.parent / ".env")
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "development-only-change-me-use-a-long-random-key-in-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
 ALLOWED_HOSTS = [x for x in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if x]

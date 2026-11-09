@@ -34,13 +34,20 @@ import {
 import {
   BrowserRouter,
   Link,
-  Navigate,
   NavLink,
   Route,
   Routes,
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom"
+import RequireAuth from "./components/RequireAuth"
+import {
+  AuthProvider,
+  errorMessage,
+  useAuth,
+  User,
+} from "./context/AuthContext"
 
 type Property = {
   id: number
@@ -57,8 +64,6 @@ type Property = {
   description: string
   amenities: string[]
 }
-
-type User = { name: string email: string role: "user" | "agent" | "admin" }
 
 const photos = [
   "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1400&q=85",
@@ -226,7 +231,7 @@ function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return <select className={`field ${props.className || ""}`} {...props} />
 }
 
-function Field({ label, children }: { label: string children: ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="field-group">
       <span>{label}</span>
@@ -946,32 +951,44 @@ function PropertyDetails({
   )
 }
 
-function AuthPage({
-  mode,
-  onLogin,
-}: {
-  mode: "login" | "signup"
-  onLogin: (user: User) => void
-}) {
+function AuthPage({ mode }: { mode: "login" | "signup" }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login, register } = useAuth()
   const [error, setError] = useState("")
-  const submit = (e: FormEvent<HTMLFormElement>) => {
+  const [submitting, setSubmitting] = useState(false)
+  const from =
+    (location.state as { from?: { pathname: string } } | null)?.from
+      ?.pathname || "/dashboard"
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
-    const email = String(form.get("email"))
-    const password = String(form.get("password"))
-    if (!email.includes("@") || password.length < 8)
-      return setError(
-        "Enter a valid email and a password of at least 8 characters.",
-      )
-    const name = String(form.get("name") || email.split("@")[0])
-    onLogin({
-      name,
-      email,
-      role:
-        mode === "signup" && form.get("role") === "agent" ? "agent" : "user",
-    })
-    navigate("/dashboard")
+    const email = String(form.get("email") || "").trim()
+    const password = String(form.get("password") || "")
+    if (!email.includes("@"))
+      return setError("Enter a valid email address.")
+    if (mode === "signup" && password.length < 8)
+      return setError("Choose a password of at least 8 characters.")
+    setError("")
+    setSubmitting(true)
+    try {
+      if (mode === "login") {
+        await login(email, password)
+      } else {
+        await register({
+          name: String(form.get("name") || email.split("@")[0]),
+          email,
+          password,
+          role: form.get("role") === "agent" ? "agent" : "user",
+        })
+      }
+      navigate(from, { replace: true })
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setSubmitting(false)
+    }
   }
   return (
     <main className="auth-page">
@@ -1018,14 +1035,20 @@ function AuthPage({
                 name="password"
                 type="password"
                 required
-                minLength={8}
+                minLength={mode === "signup" ? 8 : undefined}
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
                 }
               />
             </Field>
-            <Button type="submit">
-              {mode === "login" ? "Log in" : "Create account"}{" "}
+            <Button type="submit" disabled={submitting}>
+              {submitting
+                ? mode === "login"
+                  ? "Signing in…"
+                  : "Creating account…"
+                : mode === "login"
+                  ? "Log in"
+                  : "Create account"}{" "}
               <ArrowRight size={17} />
             </Button>
           </form>
@@ -1035,17 +1058,13 @@ function AuthPage({
               {mode === "login" ? "Create an account" : "Log in"}
             </Link>
           </p>
-          <small>
-            Demo mode stores your session only in this browser. Production
-            authentication connects through the included JWT API.
-          </small>
         </div>
       </div>
     </main>
   )
 }
 
-function Dashboard({ user, favourites }: { user: User favourites: number[] }) {
+function Dashboard({ user, favourites }: { user: User; favourites: number[] }) {
   const favouriteHomes = properties.filter((p) => favourites.includes(p.id))
   return (
     <main className="page-shell dashboard">
@@ -1434,13 +1453,7 @@ function NotFound() {
 }
 
 function AppShell() {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("hh-user") || "null")
-    } catch {
-      return null
-    }
-  })
+  const { user, logout } = useAuth()
   const [favourites, setFavourites] = useState<number[]>(() => {
     try {
       return JSON.parse(localStorage.getItem("hh-favourites") || "[]")
@@ -1448,14 +1461,6 @@ function AppShell() {
       return []
     }
   })
-  const login = (next: User) => {
-    setUser(next)
-    localStorage.setItem("hh-user", JSON.stringify(next))
-  }
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("hh-user")
-  }
   const toggleFavourite = (id: number) =>
     setFavourites((current) => {
       const next = current.includes(id)
@@ -1466,7 +1471,7 @@ function AppShell() {
     })
   return (
     <div className="app">
-      <Navbar user={user} onLogout={logout} />
+      <Navbar user={user} onLogout={() => void logout()} />
       <Routes>
         <Route
           path="/"
@@ -1494,45 +1499,39 @@ function AppShell() {
         />
         <Route
           path="/login"
-          element={<AuthPage mode="login" onLogin={login} />}
+          element={<AuthPage mode="login" />}
         />
         <Route
           path="/signup"
-          element={<AuthPage mode="signup" onLogin={login} />}
+          element={<AuthPage mode="signup" />}
         />
         <Route path="/about" element={<SimplePage page="about" />} />
         <Route path="/contact" element={<SimplePage page="contact" />} />
         <Route
           path="/favourites"
           element={
-            user ? (
+            <RequireAuth>
               <Favourites
                 favourites={favourites}
                 toggleFavourite={toggleFavourite}
               />
-            ) : (
-              <Navigate to="/login" />
-            )
+            </RequireAuth>
           }
         />
         <Route
           path="/dashboard"
           element={
-            user ? (
-              <Dashboard user={user} favourites={favourites} />
-            ) : (
-              <Navigate to="/login" />
-            )
+            <RequireAuth>
+              {user && <Dashboard user={user} favourites={favourites} />}
+            </RequireAuth>
           }
         />
         <Route
           path="/property/new"
           element={
-            user?.role === "agent" || user?.role === "admin" ? (
+            <RequireAuth roles={["agent", "admin"]}>
               <PropertyForm />
-            ) : (
-              <Navigate to={user ? "/dashboard" : "/login"} />
-            )
+            </RequireAuth>
           }
         />
         <Route path="*" element={<NotFound />} />
@@ -1545,7 +1544,9 @@ function AppShell() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppShell />
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
     </BrowserRouter>
   )
 }

@@ -10,3 +10,19 @@ class AuthApiTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {login.data['access']}")
         self.assertEqual(self.client.get("/api/auth/profile/").status_code, status.HTTP_200_OK)
         self.assertEqual(self.client.post("/api/auth/logout/", {"refresh": login.data["refresh"]}).status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_register_without_username_and_case_insensitive_email(self):
+        data = {"email": "Sam@Example.com", "password": "A-secure-pass-741!", "first_name": "Sam"}
+        first = self.client.post("/api/auth/register/", data)
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(first.data["email"], "sam@example.com")
+        again = self.client.post("/api/auth/register/", {**data, "email": "SAM@example.com"})
+        self.assertEqual(again.status_code, status.HTTP_400_BAD_REQUEST)
+        other = self.client.post("/api/auth/register/", {**data, "email": "sam@other.com"})
+        self.assertEqual(other.status_code, status.HTTP_201_CREATED)
+
+    def test_superuser_gets_admin_role(self):
+        from accounts.models import User
+        user = User.objects.create_superuser(username="root", email="root@example.com", password="A-secure-pass-741!")
+        self.assertEqual(user.role, "admin")
+

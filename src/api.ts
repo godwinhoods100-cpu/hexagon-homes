@@ -1,6 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
 
-type Tokens = { access: string refresh: string }
+type Tokens = { access: string; refresh: string }
 
 export class ApiError extends Error {
   constructor(
@@ -65,23 +65,46 @@ async function request<T>(
   return response.status === 204 ? undefined as T : response.json()
 }
 
+export type ApiUser = {
+  id: number
+  username: string
+  email: string
+  first_name: string
+  last_name: string
+  phone: string
+  role: "user" | "agent" | "admin"
+}
+
+export function hasTokens() {
+  return Boolean(getTokens()?.access)
+}
+
 export const api = {
   properties: (query = "") =>
     request(`/properties/${query ? `?${query}` : ""}`),
   property: (id: number) => request(`/properties/${id}/`),
   createProperty: (data: FormData) =>
     request("/properties/", { method: "POST", body: data }),
-  register: (data: unknown) =>
-    request("/auth/register/", { method: "POST", body: JSON.stringify(data) }),
+  register: (data: {
+    email: string
+    password: string
+    first_name?: string
+    last_name?: string
+    role?: "user" | "agent"
+  }) =>
+    request<ApiUser>("/auth/register/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   async login(email: string, password: string) {
     const tokens = await request<Tokens>("/auth/login/", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     })
     localStorage.setItem("hh-tokens", JSON.stringify(tokens))
-    return request("/auth/profile/")
+    return request<ApiUser>("/auth/profile/")
   },
-  profile: () => request("/auth/profile/"),
+  profile: () => request<ApiUser>("/auth/profile/"),
   favourites: () => request("/favourites/"),
   addFavourite: (property: number) =>
     request("/favourites/", {
