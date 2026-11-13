@@ -347,6 +347,15 @@ function Navbar({
               <Link className="avatar" to="/dashboard">
                 {user.name.charAt(0)}
               </Link>
+              <button
+                type="button"
+                className="icon-link"
+                aria-label="Log out"
+                title="Log out"
+                onClick={onLogout}
+              >
+                <LogOut size={19} />
+              </button>
             </>
           ) : (
             <>
