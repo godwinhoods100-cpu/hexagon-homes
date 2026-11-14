@@ -8,9 +8,12 @@ import {
   MapPin,
   Square,
 } from "lucide-react"
-import { useState } from "react"
+import { FormEvent, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { Button, Input } from "../components/ui"
+import { api } from "../api"
+import { useAuth } from "../context/AuthContext"
+import { describeError } from "../lib/errors"
 import { useListing } from "../hooks/useListings"
 import { formatPrice } from "../lib/format"
 import { NotFound } from "./NotFound"
@@ -24,7 +27,10 @@ export function PropertyDetails({
 }) {
   const { id } = useParams()
   const { data: property, loading, error, reload } = useListing(Number(id))
+  const { user } = useAuth()
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [formError, setFormError] = useState("")
   if (loading && !property)
     return (
       <main className="details-page">
@@ -52,6 +58,33 @@ export function PropertyDetails({
     .slice(0, 2)
     .join("")
     .toUpperCase()
+
+  const sendEnquiry = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const form = new FormData(e.currentTarget)
+    const name = String(form.get("name") || "").trim()
+    const email = String(form.get("email") || "").trim()
+    const phone = String(form.get("phone") || "").trim()
+    const message = String(form.get("message") || "").trim()
+    if (name.length < 2) return setFormError("Please enter your name.")
+    if (!/^\S+@\S+\.\S+$/.test(email))
+      return setFormError("Please enter a valid email address.")
+    if (phone && !/^[+\d][\d\s()-]{6,}$/.test(phone))
+      return setFormError("Please enter a valid phone number, or leave it blank.")
+    if (message.length < 10)
+      return setFormError("Your message should be at least 10 characters.")
+    setFormError("")
+    setSending(true)
+    try {
+      await api.inquiry({ property: property.id, name, email, phone, message })
+      setSent(true)
+    } catch (err) {
+      setFormError(describeError(err).message)
+    } finally {
+      setSending(false)
+    }
+  }
+
   return (
     <main className="details-page">
       <div className="details-head">
@@ -131,22 +164,32 @@ export function PropertyDetails({
               <Check /> Thanks — {firstName} will be in touch shortly.
             </div>
           ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                setSent(true)
-              }}
-            >
-              <Input required placeholder="Your name" />
-              <Input required type="email" placeholder="Email address" />
-              <Input required placeholder="Phone number" />
+            <form onSubmit={sendEnquiry} noValidate>
+              <Input
+                name="name"
+                placeholder="Your name"
+                defaultValue={user?.name ?? ""}
+              />
+              <Input
+                name="email"
+                type="email"
+                placeholder="Email address"
+                defaultValue={user?.email ?? ""}
+              />
+              <Input name="phone" placeholder="Phone number (optional)" />
               <textarea
+                name="message"
                 className="field"
-                required
                 defaultValue={`I'm interested in ${property.title}.`}
               />
-              <Button type="submit">
-                Request a viewing <ArrowRight size={17} />
+              {formError && (
+                <div className="error" role="alert">
+                  {formError}
+                </div>
+              )}
+              <Button type="submit" disabled={sending}>
+                {sending ? "Sending…" : "Request a viewing"}{" "}
+                <ArrowRight size={17} />
               </Button>
             </form>
           )}
