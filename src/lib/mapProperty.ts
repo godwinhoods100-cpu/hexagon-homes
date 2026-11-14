@@ -39,6 +39,7 @@ export type Paginated<T> = {
 
 /** The shape the pages use: the old Property plus a few API-only fields. */
 export type Listing = Property & {
+  published: boolean
   images: string[]
   ownerId: number
   ownerName: string
@@ -68,6 +69,7 @@ export function mapProperty(p: ApiProperty): Listing {
     image: images[0] ?? NO_PHOTO,
     description: p.description,
     amenities: p.amenities ?? [],
+    published: p.is_published,
     images,
     ownerId: p.owner,
     ownerName: p.owner_name || "Hexagon agent",
