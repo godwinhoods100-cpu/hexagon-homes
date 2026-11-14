@@ -1,18 +1,9 @@
 import { useCallback, useEffect, useState } from "react"
-import { api, ApiError } from "../api"
+import { api } from "../api"
+import { describeError, LoadError } from "../lib/errors"
 import { Listing, mapProperty } from "../lib/mapProperty"
 
-export type LoadError = { message: string; status?: number }
-
 type State<T> = { data: T | null; loading: boolean; error: LoadError | null }
-
-function describe(error: unknown): LoadError {
-  if (error instanceof ApiError)
-    return { message: error.message, status: error.status }
-  if (error instanceof TypeError)
-    return { message: "Cannot reach the server. Check that the API is running." }
-  return { message: "Something went wrong. Please try again." }
-}
 
 /**
  * Runs `load` whenever `key` changes and tracks loading / error / data.
@@ -39,7 +30,7 @@ function useFetch<T>(load: () => Promise<T>, key: string, enabled = true) {
       })
       .catch((err) => {
         if (!cancelled)
-          setState({ data: null, loading: false, error: describe(err) })
+          setState({ data: null, loading: false, error: describeError(err) })
       })
     return () => {
       cancelled = true // ignore answers that arrive after the filters changed

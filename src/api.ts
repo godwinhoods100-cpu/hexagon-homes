@@ -81,6 +81,17 @@ export function hasTokens() {
   return Boolean(getTokens()?.access)
 }
 
+/** One saved home. `property` is the property id, `id` is the favourite itself. */
+export type ApiFavourite = { id: number; property: number; created_at: string }
+
+export type InquiryInput = {
+  property: number
+  name: string
+  email: string
+  phone?: string
+  message: string
+}
+
 export const api = {
   properties: (query = "") =>
     request<Paginated<ApiProperty>>(`/properties/${query ? `?${query}` : ""}`),
@@ -107,16 +118,20 @@ export const api = {
     return request<ApiUser>("/auth/profile/")
   },
   profile: () => request<ApiUser>("/auth/profile/"),
-  favourites: () => request("/favourites/"),
+  favourites: (page = 1) =>
+    request<Paginated<ApiFavourite>>(`/favourites/?page=${page}`),
   addFavourite: (property: number) =>
-    request("/favourites/", {
+    request<ApiFavourite>("/favourites/", {
       method: "POST",
       body: JSON.stringify({ property }),
     }),
   removeFavourite: (id: number) =>
-    request(`/favourites/${id}/`, { method: "DELETE" }),
-  inquiry: (data: unknown) =>
-    request("/inquiries/", { method: "POST", body: JSON.stringify(data) }),
+    request<void>(`/favourites/${id}/`, { method: "DELETE" }),
+  inquiry: (data: InquiryInput) =>
+    request<unknown>("/inquiries/", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   async logout() {
     const tokens = getTokens()
     if (tokens?.refresh)
