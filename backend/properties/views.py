@@ -7,7 +7,7 @@ from .serializers import FavouriteSerializer, InquirySerializer, PropertySeriali
 class PropertyViewSet(viewsets.ModelViewSet):
     serializer_class = PropertySerializer
     permission_classes = [IsAgentOrAdminForWrite, IsOwnerOrAdmin]
-    filterset_fields = {"city": ["exact", "icontains"], "property_type": ["exact"], "bedrooms": ["gte"], "price": ["gte", "lte"]}
+    filterset_fields = {"city": ["exact", "icontains"], "owner": ["exact"], "property_type": ["exact"], "bedrooms": ["gte"], "price": ["gte", "lte"]}
     search_fields = ["title", "description", "address", "city"]
     ordering_fields = ["price", "created_at", "bedrooms"]
     def get_queryset(self):
