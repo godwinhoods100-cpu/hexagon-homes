@@ -1,3 +1,5 @@
+import type { ApiProperty, Paginated } from "./lib/mapProperty"
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
 
 type Tokens = { access: string; refresh: string }
@@ -81,8 +83,8 @@ export function hasTokens() {
 
 export const api = {
   properties: (query = "") =>
-    request(`/properties/${query ? `?${query}` : ""}`),
-  property: (id: number) => request(`/properties/${id}/`),
+    request<Paginated<ApiProperty>>(`/properties/${query ? `?${query}` : ""}`),
+  property: (id: number) => request<ApiProperty>(`/properties/${id}/`),
   createProperty: (data: FormData) =>
     request("/properties/", { method: "POST", body: data }),
   register: (data: {
