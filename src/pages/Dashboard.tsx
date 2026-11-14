@@ -47,8 +47,12 @@ export function Dashboard({
   user: User
   favourites: number[]
 }) {
-  const isAgent = user.role === "agent"
-  const mine = useListings(`owner=${user.id}`, isAgent)
+  const isAgent = user.role === "agent" || user.role === "admin"
+  // admins manage every listing; agents manage their own
+  const mine = useListings(
+    user.role === "admin" ? "" : `owner=${user.id}`,
+    isAgent,
+  )
   const enquiries = useEnquiries(isAgent)
   const market = useListings("")
   const saved = useListingsByIds(favourites, !isAgent)

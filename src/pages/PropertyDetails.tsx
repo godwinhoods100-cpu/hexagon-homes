@@ -100,6 +100,14 @@ export function PropertyDetails({
         <div>
           <span>Guide price</span>
           <b>{formatPrice(property.price)}</b>
+          {user && (user.role === "admin" || user.id === property.ownerId) && (
+            <Link
+              className="button button-secondary"
+              to={`/property/${property.id}/edit`}
+            >
+              Edit property
+            </Link>
+          )}
         </div>
       </div>
       <div
