@@ -15,6 +15,9 @@ if not DEBUG and SECRET_KEY == _DEV_SECRET_KEY:
     # Never run in production with the public development key.
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a long random value when DJANGO_DEBUG is false.")
 ALLOWED_HOSTS = [x for x in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if x]
+if os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    # Render sets this automatically to the public host name of the service.
+    ALLOWED_HOSTS.append(os.environ["RENDER_EXTERNAL_HOSTNAME"])
 
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
@@ -59,6 +62,12 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+if os.environ.get("CLOUDINARY_URL"):
+    # Uploaded photos live on Cloudinary so they survive redeploys (see config/storage.py).
+    STORAGES = {
+        "default": {"BACKEND": "config.storage.CloudinaryMediaStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
 CORS_ALLOWED_ORIGINS = [x for x in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8443").split(",") if x]
@@ -77,6 +86,8 @@ SIMPLE_JWT = {"ACCESS_TOKEN_LIFETIME": timedelta(minutes=15), "REFRESH_TOKEN_LIF
 SPECTACULAR_SETTINGS = {"TITLE": "Hexagon Homes API", "DESCRIPTION": "Secure property management API", "VERSION": "1.0.0", "SERVE_INCLUDE_SCHEMA": False}
 
 if not DEBUG:
+    # Render terminates HTTPS at its proxy; without this the redirect below loops forever.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "true").lower() == "true"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
