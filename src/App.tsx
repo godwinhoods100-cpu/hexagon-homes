@@ -108,6 +108,14 @@ function AppShell() {
             </RequireAuth>
           }
         />
+        <Route
+          path="/property/:id/edit"
+          element={
+            <RequireAuth roles={["agent", "admin"]}>
+              <PropertyForm />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />

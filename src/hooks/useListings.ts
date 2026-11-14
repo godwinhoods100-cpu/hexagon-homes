@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { api } from "../api"
+import { api, ApiInquiry } from "../api"
 import { describeError, LoadError } from "../lib/errors"
 import { Listing, mapProperty } from "../lib/mapProperty"
 
@@ -59,10 +59,23 @@ export function useListings(query = "", enabled = true) {
 }
 
 /** A single listing by id. A missing one gives error.status === 404. */
-export function useListing(id: number) {
+export function useListing(id: number, enabled = true) {
   return useFetch<Listing>(
     async () => mapProperty(await api.property(id)),
     String(id),
+    enabled,
+  )
+}
+
+/** The enquiries sent about the logged-in agent's homes (newest first). */
+export function useEnquiries(enabled = true) {
+  return useFetch<{ items: ApiInquiry[]; count: number }>(
+    async () => {
+      const page = await api.inquiries()
+      return { items: page.results, count: page.count }
+    },
+    "enquiries",
+    enabled,
   )
 }
 

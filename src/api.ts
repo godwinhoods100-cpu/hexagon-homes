@@ -84,6 +84,19 @@ export function hasTokens() {
 /** One saved home. `property` is the property id, `id` is the favourite itself. */
 export type ApiFavourite = { id: number; property: number; created_at: string }
 
+/** One enquiry as an agent sees it in their inbox. */
+export type ApiInquiry = {
+  id: number
+  property: number
+  sender: number | null
+  name: string
+  email: string
+  phone: string
+  message: string
+  is_read: boolean
+  created_at: string
+}
+
 export type InquiryInput = {
   property: number
   name: string
@@ -97,7 +110,13 @@ export const api = {
     request<Paginated<ApiProperty>>(`/properties/${query ? `?${query}` : ""}`),
   property: (id: number) => request<ApiProperty>(`/properties/${id}/`),
   createProperty: (data: FormData) =>
-    request("/properties/", { method: "POST", body: data }),
+    request<ApiProperty>("/properties/", { method: "POST", body: data }),
+  updateProperty: (id: number, data: FormData) =>
+    request<ApiProperty>(`/properties/${id}/`, { method: "PATCH", body: data }),
+  deleteProperty: (id: number) =>
+    request<void>(`/properties/${id}/`, { method: "DELETE" }),
+  inquiries: (page = 1) =>
+    request<Paginated<ApiInquiry>>(`/inquiries/?page=${page}`),
   register: (data: {
     email: string
     password: string
