@@ -1,0 +1,44 @@
+import { Heart } from "lucide-react"
+import { Link } from "react-router-dom"
+import { PropertyCard } from "../components/PropertyCard"
+import { properties } from "../data/sampleProperties"
+
+export function Favourites({
+  favourites,
+  toggleFavourite,
+}: {
+  favourites: number[]
+  toggleFavourite: (id: number) => void
+}) {
+  const items = properties.filter((p) => favourites.includes(p.id))
+  return (
+    <main className="page-shell">
+      <div className="page-intro">
+        <span className="eyebrow">Your collection</span>
+        <h1>Saved homes.</h1>
+        <p>A shortlist of places that caught your eye.</p>
+      </div>
+      {items.length ? (
+        <div className="property-grid">
+          {items.map((p) => (
+            <PropertyCard
+              key={p.id}
+              property={p}
+              favourite
+              onFavourite={toggleFavourite}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">
+          <Heart />
+          <h2>No saved homes yet</h2>
+          <p>Tap the heart on any property to build your shortlist.</p>
+          <Link className="button button-primary" to="/listings">
+            Explore properties
+          </Link>
+        </div>
+      )}
+    </main>
+  )
+}
